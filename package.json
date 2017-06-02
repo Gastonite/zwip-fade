@@ -1,12 +1,12 @@
 {
   "name": "zwip-fade",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "src/index.js",
   "repository": "https://github.com/Gastonite/zwip-fade",
   "author": "Clément Pasquier <clement@n00sphere.net>",
   "license": "GPLv3",
   "dependencies": {
     "style-attr": "^1.2.0",
-    "zwip": "^1.0.3"
+    "zwip": "^1.0.4"
   }
 }

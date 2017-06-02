@@ -1,5 +1,6 @@
-# zwip
-Yet another js animation engine
+# zwip-fade
+
+An animation to be played with [Zwip](https://github.com/Gastonyte/zwip) 
 
 ## Run the example
 
