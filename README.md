@@ -6,7 +6,7 @@ A [Zwip](https://github.com/Gastonyte/zwip) fade animation
 
 show the already builded example:
 
-```examples/simple/build/index.html```
+```example/build/index.html```
 
 
 ### Build example using webpack-dev-server
