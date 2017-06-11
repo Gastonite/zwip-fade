@@ -6,21 +6,23 @@ const Webpack = require('webpack');
 
 module.exports = (env) => {
 
-  const isBuild = false;
+  const isBuild = env === 'production' || env === 'prod';
 
-  const entry = Path.resolve('./src/index.js');
+  const port = 3000;
+
+  const entry = Path.resolve(__dirname, './index.js');
 
   const output = {
-    path: Path.resolve('./build'),
+    path: Path.resolve(__dirname, './build'),
     filename: '[name].js'
   };
 
-  const htmlTemplatePath = Path.resolve('src/index.html');
+  const template = Path.resolve(__dirname, 'index.html');
 
   const devtool = !isBuild && 'source-map';
 
   const devServer = {
-    port: 3000,
+    port,
     historyApiFallback: true,
     inline: !isBuild,
     hot: !isBuild,
@@ -51,7 +53,7 @@ module.exports = (env) => {
 
   plugins.push(new HTMLWebpackPlugin({
     filename: `index.html`,
-    template: htmlTemplatePath,
+    template,
     cache: true,
     inject: 'body',
     minify: isBuild && {

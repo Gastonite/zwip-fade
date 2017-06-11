@@ -1,21 +1,22 @@
 # zwip-fade
 
-An animation to be played with [Zwip](https://github.com/Gastonyte/zwip) 
+A [Zwip](https://github.com/Gastonyte/zwip) fade animation 
+ 
+### Show example
 
-## Run the example
+show the already builded example:
+
+```examples/simple/build/index.html```
+
+
+### Build example using webpack-dev-server
 
 ```
-cd example/simple
-
-npm install && npm run dev
-
+npm install && npm run demo
 ```
 
 or, with yarn:
 ```
-cd example/simple
-
-yarn && yarn dev
-
+yarn && yarn demo
 ```
-and [open the example](http://localhost:3000)
+Now the demo is visible at [http://localhost:3000](http://localhost:3000)

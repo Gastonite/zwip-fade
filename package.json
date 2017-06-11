@@ -1,12 +1,26 @@
 {
   "name": "zwip-fade",
-  "version": "1.0.1",
-  "main": "src/index.js",
+  "version": "1.0.2",
+  "main": "src/animation.js",
   "repository": "https://github.com/Gastonite/zwip-fade",
   "author": "Clément Pasquier <clement@n00sphere.net>",
-  "license": "GPLv3",
+  "license": "GPL-3.0",
+  "scripts": {
+    "demo": "webpack-dev-server --config example/webpack.config.js --progress --colors"
+  },
+  "keywords": [
+    "zwip",
+    "animation",
+    "fade",
+    "requestAnimationFrame",
+    "request-animation-frame",
+    "js"
+  ],
   "dependencies": {
-    "style-attr": "^1.2.0",
-    "zwip": "^1.0.4"
+    "style-attr": "^1.3.0",
+    "webpack": "^2.6.1",
+    "webpack-dev-server": "^2.4.5",
+    "zwip": "Gastonite/zwip",
+    "zwip-player": "Gastonite/zwip-player"
   }
 }
