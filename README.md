@@ -15,7 +15,8 @@ show the already builded example:
 npm install && npm run demo
 ```
 
-or, with yarn:
+or
+
 ```
 yarn && yarn demo
 ```

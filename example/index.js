@@ -7,34 +7,23 @@ import FadeAnimation from '../src/animation';
 
 Component.define(ZwipPlayer);
 
-
-
 document.addEventListener('DOMContentLoaded', () => {
-
 
   const zwipPlayer = document.createElement('zwip-player');
 
   zwipPlayer.update({
     makeAnimation(scene) {
-      console.log('makeAnimation')
-
-      // const circle = scene.appendChild(document.createElement('div'));
-      // circle.classList.add('circle');
 
       return FadeAnimation({
         element: scene.firstChild,
         duration: 1000
       });
-      // console.log('makeAnimation', ...args)
     },
-    renderScene(scene) {
+    renderScene() {
 
-      console.log('renderScene')
       renderDiv(null, null, 'class', 'circle', null);
-
     },
   });
 
   document.body.insertBefore(zwipPlayer, document.body.firstChild);
-
 });
