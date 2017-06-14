@@ -24,7 +24,7 @@ const FadeAnimation = (options = {}) => {
     element.setAttribute('style', renderStyle(style));
   };
 
-  const start = () => {
+  const start = (options) => {
 
     style = element.getAttribute('style');
     style = style ? parseStyle(style) : {};
@@ -33,7 +33,7 @@ const FadeAnimation = (options = {}) => {
       ? parseFloat(element.style.opacity)
       : (animation.reverse ? 0 : 1);
 
-    _start();
+    _start(options);
   };
 
   const stop = () => {
@@ -42,7 +42,7 @@ const FadeAnimation = (options = {}) => {
   };
 
 
-  const animation =  Animation(Object.assign(options, { update, render, start, stop  }));
+  const animation =  Animation(Object.assign(options, { update, render, start, stop }));
 
   return animation;
 };
