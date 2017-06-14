@@ -1257,13 +1257,13 @@ date-now@^0.1.4:
   version "0.1.4"
   resolved "https://registry.yarnpkg.com/date-now/-/date-now-0.1.4.tgz#eaf439fd4d4848ad74e5cc7dbef200672b9e345b"
 
-debug@*, debug@2.6.8, debug@^2.1.1, debug@^2.2.0, debug@^2.6.8:
+debug@*, debug@2.6.8, debug@^2.1.1, debug@^2.6.8:
   version "2.6.8"
   resolved "https://registry.yarnpkg.com/debug/-/debug-2.6.8.tgz#e731531ca2ede27d188222427da17821d68ff4fc"
   dependencies:
     ms "2.0.0"
 
-debug@2.6.7:
+debug@2.6.7, debug@^2.2.0:
   version "2.6.7"
   resolved "https://registry.yarnpkg.com/debug/-/debug-2.6.7.tgz#92bad1f6d05bbb6bba22cca88bcd0ec894c2861e"
   dependencies:
@@ -4001,9 +4001,9 @@ yargs@~3.10.0:
     decamelize "^1.0.0"
     window-size "0.1.0"
 
-zwip-player@^1.0.3:
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/zwip-player/-/zwip-player-1.0.3.tgz#f2f27288f499cf693b7852da05b8786f100b758e"
+zwip-player@^1.0.7:
+  version "1.0.7"
+  resolved "https://registry.yarnpkg.com/zwip-player/-/zwip-player-1.0.7.tgz#d902bd6054d58aba507b5ae3ce492b52b4c082f4"
   dependencies:
     "@webcomponents/custom-elements" "^1.0.0"
     array.from "^1.0.3"

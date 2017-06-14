@@ -59,7 +59,7 @@
 /******/ 	
 /******/ 	
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "3c7b0db44d2fe13bfa92"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "4959039da3669a31bb42"; // eslint-disable-line no-unused-vars
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentChildModule; // eslint-disable-line no-unused-vars
 /******/ 	var hotCurrentParents = []; // eslint-disable-line no-unused-vars
@@ -710,6 +710,920 @@
 /******/ })
 /************************************************************************/
 /******/ ({
+
+/***/ "../../klak/src/emitter.js":
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var internals = {};
+
+internals.TypeFilter = function (type) {
+  return function (value) {
+    return value.type === type;
+  };
+};
+internals.EqualityFilter = function (value) {
+  return function (input) {
+    return input === value;
+  };
+};
+
+internals.getListener = function (value) {
+  return value.listener;
+};
+internals.isString = function (input) {
+  return typeof input === 'string';
+};
+internals.isArray = function (input) {
+  return input instanceof Array;
+};
+internals.isFunction = function (input) {
+  return typeof input === 'function';
+};
+internals.isEmpty = function (input) {
+  return input.length < 1;
+};
+internals.assert = function (condition, message) {
+  if (!condition) throw new Error(message);
+};
+internals.ArgumentCheck = function (types, method) {
+  var assert = internals.assert,
+      isArray = internals.isArray,
+      isString = internals.isString,
+      isFunction = internals.isFunction,
+      isEmpty = internals.isEmpty;
+
+
+  assert(isFunction(method), '\'method\' must be a function');
+
+  var check = function check(type, listener) {
+
+    if (isArray(type)) return type.forEach(function (type) {
+      return check(type, listener);
+    });
+
+    assert(isString(type) && !isEmpty(type), '\'type\' must be a string');
+
+    assert(types.includes(type), '"' + type + '" listener type is not allowed');
+
+    if (isArray(listener)) return listener.forEach(function (handler) {
+      return check(type, handler);
+    });
+
+    assert(isFunction(listener), '\'listener\' must be a function');
+
+    method(type, listener);
+  };
+
+  return check;
+};
+
+internals.Emitter = module.exports = function (allowedTypes) {
+  var assert = internals.assert,
+      TypeFilter = internals.TypeFilter,
+      EqualityFilter = internals.EqualityFilter,
+      getListener = internals.getListener,
+      isArray = internals.isArray,
+      isString = internals.isString,
+      isEmpty = internals.isEmpty;
+
+
+  assert(isArray(allowedTypes) && !isEmpty(allowedTypes) && allowedTypes.every(isString), '\'types\' must be an array of string');
+
+  var _listeners = [];
+
+  var _getListeners = function _getListeners(type) {
+    return _listeners.filter(TypeFilter(type)).map(getListener);
+  };
+  var _findListener = function _findListener(type, listener) {
+    return _getListeners(type).find(EqualityFilter(listener));
+  };
+
+  var emitter = {
+    on: function on(type, listener) {
+
+      if (_findListener(type, listener)) return;
+
+      _listeners.push({ type: type, listener: listener });
+    },
+    off: function off(type, listener) {
+
+      var found = _findListener(type, listener);
+
+      if (!found) return;
+
+      _listeners.splice(_listeners.findIndex(function (item) {
+        return item.type === type && item.listener === found;
+      }), 1);
+    },
+    emit: function emit(type) {
+      for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+        args[_key - 1] = arguments[_key];
+      }
+
+      assert(isString(type) && !isEmpty(type), '\'type\' must be a string');
+
+      _getListeners(type).forEach(function (handler) {
+        return void handler.apply(undefined, args);
+      });
+    }
+  };
+
+  emitter.on = internals.ArgumentCheck(allowedTypes, emitter.on);
+  emitter.off = internals.ArgumentCheck(allowedTypes, emitter.off);
+
+  return emitter;
+};
+
+/***/ }),
+
+/***/ "../../zwip/src/animation.js":
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _loop = __webpack_require__("../../zwip/src/loop.js");
+
+var _loop2 = _interopRequireDefault(_loop);
+
+var _klak = __webpack_require__("../../klak/src/emitter.js");
+
+var _klak2 = _interopRequireDefault(_klak);
+
+var _utils = __webpack_require__("../../zwip/src/utils.js");
+
+var _easings = __webpack_require__("../../zwip/src/easings.js");
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var internal = {};
+
+internal.parseEasing = function () {
+  var easing = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : _easings.easings.linear;
+
+
+  if (easing) {
+
+    if ((0, _utils.isString)(easing)) {
+
+      if (!_easings.easings[easing]) throw new Error('Unknown "' + easing + '" easing function');
+
+      easing = _easings.easings[easing];
+    }
+
+    (0, _utils.isFunction)(easing, 'easing');
+  }
+
+  return easing;
+};
+
+exports.default = internal.Animation = function () {
+  var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+
+  (0, _utils.isObject)(options, 'options');
+  (0, _utils.isUndefined)(options.isZwipAnimation, 'isZwipAnimation');
+
+  var _options$start = options.start,
+      _start = _options$start === undefined ? _utils.noop : _options$start,
+      _options$stop = options.stop,
+      _stop = _options$stop === undefined ? _utils.noop : _options$stop,
+      _options$update = options.update,
+      _update = _options$update === undefined ? _utils.noop : _options$update,
+      _options$render = options.render,
+      _render = _options$render === undefined ? _utils.noop : _options$render,
+      duration = options.duration,
+      _options$frequency = options.frequency,
+      _frequency = _options$frequency === undefined ? 1 : _options$frequency;
+
+  var _reverse = options.reverse,
+      _easing = options.easing,
+      nbFrames = options.nbFrames;
+
+
+  (0, _utils.assert)((0, _utils.isFunction)(_start), '\'start\' must be a function');
+  (0, _utils.assert)((0, _utils.isFunction)(_stop), '\'stop\' must be a function');
+  (0, _utils.assert)((0, _utils.isFunction)(_update), '\'update\' must be a function');
+  (0, _utils.assert)((0, _utils.isFunction)(_render), '\'render\' must be a function');
+
+  (0, _utils.assert)((0, _utils.isInteger)(_frequency) && _frequency > 0, '\'frequency\' must be an integer greater than 0');
+
+  // console.log(duration, nbFrames, )
+  if (!(!(0, _utils.isUndefined)(duration) ^ !(0, _utils.isUndefined)(nbFrames))) throw new Error('Exactly one option of [\'duration\', \'nbFrames\'] is required');
+
+  if (duration) (0, _utils.assert)((0, _utils.isInteger)(duration) && duration > 0, '\'duration\' must be an integer greater than 0');
+
+  if (nbFrames) (0, _utils.assert)((0, _utils.isInteger)(nbFrames) && nbFrames > 0, '\'nbFrames\' must be an integer greater than 0');
+
+  _easing = internal.parseEasing(_easing);
+  _reverse = !!_reverse;
+
+  var _startedAt = void 0;
+  var _pausedAt = void 0;
+  var _pausedTime = void 0;
+  var _frameCounter = void 0;
+
+  console.log('frequency', _frequency);
+
+  var animation = {
+    isZwipAnimation: true,
+    start: function start() {
+      var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+
+      if (_startedAt) throw new Error('Animation is already started');
+
+      // console.log('Animation.start()', options)
+
+      (0, _utils.isObject)(options, 'options');
+
+      // const reverse = 'reverse' in options ? !!options.reverse : _reverse;
+      if ('reverse' in options) _reverse = !!options.reverse;
+
+      _pausedAt = null;
+      _startedAt = Date.now();
+      _frameCounter = 0;
+      _pausedTime = 0;
+
+      _start(options);
+
+      _loop2.default.register(animation);
+
+      animation.emit('start');
+    },
+    stop: function stop() {
+
+      _pausedAt = null;
+      _startedAt = null;
+      _pausedTime = null;
+
+      _stop();
+
+      _loop2.default.deregister(animation);
+
+      animation.emit('stop');
+    },
+    pause: function pause() {
+
+      if (!_pausedAt) {
+        _pausedAt = Date.now();
+        animation.emit('unpause');
+        return;
+      }
+
+      _pausedTime = _pausedTime + (Date.now() - _pausedAt);
+      _pausedAt = null;
+      animation.emit('pause');
+    },
+    update: function update() {
+
+      if (!_startedAt) return;
+
+      if (nbFrames && _frameCounter >= nbFrames) return animation.stop();
+
+      _frameCounter++;
+
+      if (duration) {
+
+        var playedTime = animation.played;
+
+        nbFrames = Math.floor(_frameCounter * duration / playedTime);
+      }
+
+      _update();
+    },
+    render: function render() {
+      _render();
+    },
+
+    get currentFrame() {
+      return _frameCounter;
+    },
+    get reverse() {
+      return _reverse;
+    },
+    get frequency() {
+      return _frequency;
+    },
+    get pausedAt() {
+      return _pausedAt;
+    },
+    get played() {
+
+      if (!_startedAt) return 0;
+
+      var now = Date.now();
+
+      var totalTime = now - _startedAt;
+
+      if (_pausedAt) totalTime = totalTime - (now - _pausedAt);
+
+      return totalTime - _pausedTime;
+    },
+    get value() {
+
+      var value = _frameCounter / nbFrames;
+
+      return _easing(!_reverse ? value : 1 - value);
+    },
+    get nbFrames() {
+
+      if (nbFrames) return nbFrames;
+
+      var duration = animation.duration;
+
+      if (!duration) return;
+
+      return duration / 1000 * _loop2.default.fps;
+    },
+    get duration() {
+
+      if (duration) return duration;
+
+      var nbFrames = animation.nbFrames;
+
+      if (!nbFrames) return;
+
+      return nbFrames / _loop2.default.fps;
+    },
+    get state() {
+      return {
+        value: animation.value,
+        nbFrames: animation.nbFrames,
+        duration: animation.duration,
+        played: animation.played,
+        currentFrame: animation.currentFrame
+      };
+    }
+  };
+
+  return Object.assign(animation, (0, _klak2.default)(['start', 'stop', 'pause', 'unpause', 'tick']));
+};
+
+internal.Animation.isAnimation = function (input) {
+  return (0, _utils.isObject)(input) && input.isZwipAnimation === true;
+};
+
+/***/ }),
+
+/***/ "../../zwip/src/chain.js":
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _animation = __webpack_require__("../../zwip/src/animation.js");
+
+var _animation2 = _interopRequireDefault(_animation);
+
+var _utils = __webpack_require__("../../zwip/src/utils.js");
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var Chain = function Chain() {
+  var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+  var _options = options = (0, _utils.isObject)(options, 'options'),
+      duration = _options.duration,
+      frequency = _options.frequency,
+      animations = _options.animations,
+      _options$start = _options.start,
+      _start = _options$start === undefined ? _utils.noop : _options$start,
+      _options$stop = _options.stop,
+      _stop = _options$stop === undefined ? _utils.noop : _options$stop;
+
+  var _options2 = options,
+      _options2$reverse = _options2.reverse,
+      reverse = _options2$reverse === undefined ? false : _options2$reverse;
+
+
+  (0, _utils.isInteger)(duration, 'duration');
+  (0, _utils.isArray)(animations, 'animations');
+
+  var durationsSum = animations.reduce(function (sum, animation, i) {
+
+    if (!_animation2.default.isAnimation(animation)) throw new Error('Invalid Chain: Invalid "animations" option: item at position ' + i + ' is not a Zwip animation');
+
+    return sum + animation.duration;
+  }, 0);
+
+  if (duration !== durationsSum) throw new Error('Invalid Chain: \'duration\' must be equal to the sum of \'animations\' durations');
+
+  var _started = false;
+  var _reverse = false;
+
+  var chain = {
+    duration: duration,
+    animations: animations,
+    start: function start() {
+      var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+
+      if (_started) throw new Error('Chain is already started');
+
+      _started = true;
+
+      var _isObject = (0, _utils.isObject)(options, 'options'),
+          reverse = _isObject.reverse;
+
+      reverse = !!reverse;
+
+      error('Chain.start() actual:', _reverse, 'option:', reverse, '1:', animations[0].reverse, '2:', animations[1].reverse);
+
+      _start();
+
+      var items = animations;
+
+      var reverseHasChanged = reverse !== _reverse;
+      if (reverseHasChanged) {
+        _reverse = !_reverse;
+      }
+      if (reverse) {
+        items = animations.slice(0).reverse();
+      }
+
+      var _startAnimation = function _startAnimation(animation) {
+
+        var options = {};
+
+        // if (reverse && reverseHasChanged)
+        // if (reverseHasChanged )
+        if (reverseHasChanged) options.reverse = !animation.reverse;
+        // options.reverse = reverse;
+
+        animation.start(options);
+      };
+
+      items.forEach(function (item, i) {
+
+        var isFirst = i === 0;
+        if (isFirst) _startAnimation(item);
+
+        var _nextAnimation = function _nextAnimation() {
+
+          item.off('stop', _nextAnimation);
+
+          if (i >= items.length - 1) return chain.stop();
+
+          _startAnimation(items[i + 1]);
+        };
+
+        item.on('stop', _nextAnimation);
+      });
+    },
+    stop: function stop() {
+
+      _stop();
+      _started = false;
+    }
+  };
+
+  return Object.freeze(chain);
+};
+// const Chain = (options = {}) => {
+//
+//   const { animations, duration } = _parseOptions(options);
+//
+//   const durationsSum = animations.reduce((sum, animation, i) => {
+//
+//     if (!animation || animation.isZwipAnimation !== true)
+//       throw new Error(`Invalid Chain: Invalid "animations" option: item at position ${i} is not a Zwip animation`);
+//
+//     return sum + animation.duration;
+//   }, 0);
+//
+//   if (duration !== durationsSum)
+//     throw new Error(`Invalid Chain: The total duration is not equal to the sum of the duration of the "animations"`);
+//
+//
+//   return Animation({
+//     duration,
+//     start(options) {
+//
+//       console.log('Chain.start()', options.reverse);
+//
+//       let _items = animations;
+//
+//       if (options.reverse)
+//         _items = _items.reverse();
+//
+//       _items.forEach((animation, i) => {
+//
+//         console.error('chain_'+i, animation.id, animation, options.reverse);
+//
+//         const _startNextAnimation = () => {
+//
+//           // console.error('chain_'+i, 'stop');
+//
+//           if (i < _items.length - 1) {
+//
+//             // console.error('chain_'+i, 'next', _items[i + 1].id, options.reverse);
+//
+//             _items[i + 1].start({ reverse: options.reverse });
+//
+//             animation.off('stop', _startNextAnimation);
+//           }
+//         };
+//
+//         animation.on('stop', _startNextAnimation);
+//       });
+//
+//       animations[0].start();
+//     }
+//   });
+// };
+
+exports.default = Chain;
+
+/***/ }),
+
+/***/ "../../zwip/src/easings.js":
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+var EaseIn = exports.EaseIn = function EaseIn(power) {
+  return function (t) {
+    return Math.pow(t, power);
+  };
+};
+var EaseOut = exports.EaseOut = function EaseOut(power) {
+  return function (t) {
+    return 1 - Math.abs(Math.pow(t - 1, power));
+  };
+};
+var EaseInOut = exports.EaseInOut = function EaseInOut(power) {
+  return function (t) {
+    return t < .5 ? EaseIn(power)(t * 2) / 2 : EaseOut(power)(t * 2 - 1) / 2 + 0.5;
+  };
+};
+
+var easings = exports.easings = {
+  linear: EaseInOut(1),
+  easeInQuad: EaseIn(2),
+  easeOutQuad: EaseOut(2),
+  easeInOutQuad: EaseInOut(2),
+  easeInCubic: EaseIn(3),
+  easeOutCubic: EaseOut(3),
+  easeInOutCubic: EaseInOut(3),
+  easeInQuart: EaseIn(4),
+  easeOutQuart: EaseOut(4),
+  easeInOutQuart: EaseInOut(4),
+  easeInQuint: EaseIn(5),
+  easeOutQuint: EaseOut(5),
+  easeInOutQuint: EaseInOut(5),
+  easeInCirc: function easeInCirc(t) {
+    return -(Math.sqrt(1 - easings.easeInQuad(t)) - 1);
+  },
+  easeOutCirc: function easeOutCirc(t) {
+    return Math.sqrt(easings.easeOutQuad(t));
+  }
+};
+
+/***/ }),
+
+/***/ "../../zwip/src/index.js":
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.Chain = exports.Loop = exports.Animation = undefined;
+
+var _animation = __webpack_require__("../../zwip/src/animation.js");
+
+var _animation2 = _interopRequireDefault(_animation);
+
+var _loop = __webpack_require__("../../zwip/src/loop.js");
+
+var _loop2 = _interopRequireDefault(_loop);
+
+var _chain = __webpack_require__("../../zwip/src/chain.js");
+
+var _chain2 = _interopRequireDefault(_chain);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+exports.Animation = _animation2.default;
+exports.Loop = _loop2.default;
+exports.Chain = _chain2.default;
+
+/***/ }),
+
+/***/ "../../zwip/src/loop.js":
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _klak = __webpack_require__("../../klak/src/emitter.js");
+
+var _klak2 = _interopRequireDefault(_klak);
+
+var _utils = __webpack_require__("../../zwip/src/utils.js");
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var internal = {
+  animations: [],
+  listeners: [],
+  state: {
+    status: 'initialized'
+  },
+  fps: 60,
+  listenerTypes: ['start', 'stop', 'pause', 'unpause']
+};
+
+internal.loop = function () {
+
+  if (internal.paused) return;
+
+  internal.requestId = requestAnimationFrame(internal.loop);
+  internal.now = Date.now();
+
+  internal.interval = 1000 / internal.fps;
+  internal.delta = internal.now - internal.then;
+
+  if (internal.delta > internal.interval) {
+
+    internal.AnimationLoop.frame();
+  }
+};
+
+internal.MethodCaller = function (key) {
+  for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+    args[_key - 1] = arguments[_key];
+  }
+
+  (0, _utils.isRequired)(key, 'key');
+  (0, _utils.isString)(key, 'key');
+
+  return function (animation) {
+
+    // console.log(internal.counter, animation, animation.frequency, internal.counter % animation.frequency)
+    if (animation[key] && internal.counter % animation.frequency === 0) animation[key].apply(animation, args);
+  };
+};
+
+internal.emitTick = internal.MethodCaller('emit', 'tick');
+internal.callUpdate = internal.MethodCaller('update');
+internal.callRender = internal.MethodCaller('render');
+internal.callPause = internal.MethodCaller('pause');
+
+internal.isNotPaused = function (object) {
+  return !object.pausedAt;
+};
+
+internal.AnimationLoop = {
+  start: function start() {
+
+    if (internal.requestId) throw new Error('Loop is already started');
+
+    internal.counter = 0;
+    internal.paused = null;
+    internal.then = Date.now();
+    internal.state.status = 'started';
+
+    internal.loop();
+
+    internal.AnimationLoop.emit('start');
+  },
+  stop: function stop() {
+
+    if (internal.requestId) cancelAnimationFrame(internal.requestId);
+
+    internal.requestId = null;
+    internal.state.status = 'stopped';
+
+    internal.AnimationLoop.emit('stop');
+  },
+  pause: function pause() {
+
+    if (internal.paused) {
+
+      internal.paused = null;
+      internal.state.status = 'started';
+
+      internal.animations.forEach(internal.callPause);
+
+      internal.AnimationLoop.emit('unpause');
+
+      internal.loop();
+      return;
+    }
+
+    internal.animations.forEach(internal.callPause);
+
+    internal.paused = Date.now();
+    internal.state.status = 'paused';
+
+    internal.AnimationLoop.emit('pause');
+  },
+  register: function register(animation) {
+    var auto = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+
+
+    (0, _utils.isObject)(animation, 'animation');
+
+    (0, _utils.assert)(animation.isZwipAnimation === true, '\'animation\' must be a ZwipAnimation object');
+
+    (0, _utils.assert)((0, _utils.isFunction)(animation.render) || (0, _utils.isFunction)(animation.update), 'At least \'render\' or \'update\' method is required');
+
+    animation.render = animation.render || _utils.noop;
+    animation.update = animation.update || _utils.noop;
+
+    if (auto && !internal.requestId) internal.AnimationLoop.start();
+
+    if (internal.animations.includes(animation)) return;
+
+    internal.animations.push(animation);
+  },
+  deregister: function deregister(animation) {
+    var auto = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+
+
+    var index = internal.animations.indexOf(animation);
+
+    if (~index) internal.animations.splice(index, 1);
+
+    if (auto && internal.requestId && !internal.animations.length) internal.AnimationLoop.stop();
+  },
+  frame: function frame() {
+
+    internal.AnimationLoop.emit('tick');
+
+    internal.counter++;
+
+    internal.elapsed = internal.now - internal.then;
+    internal.then = internal.now - internal.delta % internal.interval;
+
+    internal.state.fps = 1000 / internal.elapsed;
+    internal.state.animations = internal.animations.length;
+    internal.state.frames = internal.counter;
+
+    var animations = internal.animations.filter(internal.isNotPaused);
+
+    animations.forEach(internal.emitTick);
+
+    animations.forEach(internal.callUpdate);
+
+    animations.forEach(internal.callRender);
+  },
+
+
+  get state() {
+    return internal.state;
+  },
+  get fps() {
+    return internal.fps;
+  },
+  set fps(newValue) {
+
+    (0, _utils.isInteger)(newValue, 'fps');
+
+    internal.fps = newValue;
+  }
+};
+
+exports.default = Object.assign(internal.AnimationLoop, (0, _klak2.default)(['start', 'stop', 'pause', 'unpause', 'tick']));
+
+/***/ }),
+
+/***/ "../../zwip/src/polyfills.js":
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+if (!Element.prototype.matches) {
+  Element.prototype.matches = Element.prototype.matchesSelector || Element.prototype.mozMatchesSelector || Element.prototype.msMatchesSelector || Element.prototype.oMatchesSelector || Element.prototype.webkitMatchesSelector || function (s) {
+    var matches = (this.document || this.ownerDocument).querySelectorAll(s);
+    var i = matches.length;
+    while (--i >= 0 && matches.item(i) !== this) {}
+    return i > -1;
+  };
+}
+window.requestAnimationFrame = function () {
+  return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function (callback) {
+    window.setTimeout(function () {
+
+      callback(+new Date());
+    }, 1000 / 60);
+  };
+}();
+
+/***/ }),
+
+/***/ "../../zwip/src/utils.js":
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+var internals = {};
+
+internals.Assertion = function (check, errorMessage) {
+
+  return function (input, assert) {
+
+    var isTrue = !!check(input);
+    if (isTrue) return input || true;
+
+    if (!assert) return false;
+
+    throw new Error('"' + (typeof assert !== 'string' ? 'input' : assert) + '" ' + errorMessage);
+  };
+};
+
+var assert = exports.assert = function assert(condition, message) {
+
+  if (condition) return condition;
+
+  throw new Error(message);
+};
+
+var noop = exports.noop = function noop() {};
+var isEqualTo = exports.isEqualTo = function isEqualTo(value) {
+  var message = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'is not equal to value';
+  return internals.Assertion(function (input) {
+    return input === value;
+  }, message);
+};
+var isTrue = exports.isTrue = isEqualTo(true, 'must be true');
+var isUndefined = exports.isUndefined = isEqualTo(void 0, 'must be undefined');
+var isRequired = exports.isRequired = internals.Assertion(function (input) {
+  return !!input;
+}, 'is required');
+var isInstanceOf = exports.isInstanceOf = function isInstanceOf(type) {
+  return internals.Assertion(function (input) {
+    return input instanceof type;
+  }, 'is not an instance of ' + type.name);
+};
+var isArray = exports.isArray = isInstanceOf(Array);
+var isObject = exports.isObject = internals.Assertion(function (input) {
+  return (typeof input === 'undefined' ? 'undefined' : _typeof(input)) === 'object';
+}, 'must be an object');
+var isString = exports.isString = internals.Assertion(function (input) {
+  return typeof input === 'string';
+}, 'must be a string');
+var isFunction = exports.isFunction = internals.Assertion(function (input) {
+  return typeof input === 'function';
+}, 'must be a function');
+var isNumber = exports.isNumber = internals.Assertion(function (input) {
+  return typeof input === 'number';
+}, 'must be a number');
+var isInteger = exports.isInteger = internals.Assertion(function (input) {
+  return Number.isInteger(input);
+}, 'must be an integer');
+
+var isElement = exports.isElement = internals.Assertion(function (object) {
+
+  if (!object || (typeof object === 'undefined' ? 'undefined' : _typeof(object)) !== "object") return false;
+
+  if ((typeof HTMLElement === 'undefined' ? 'undefined' : _typeof(HTMLElement)) === "object") return object instanceof HTMLElement;
+
+  return object.nodeType === 1 && typeof object.nodeName === "string";
+}, 'must be a HTMLElement');
+
+var round = exports.round = function round(value, decimals) {
+
+  isNumber(value, 'value');
+
+  isRequired(decimals, 'decimals');
+  isInteger(decimals, 'decimals');
+
+  return Number(Math.round(value + 'e' + decimals) + 'e-' + decimals);
+};
+
+/***/ }),
 
 /***/ "../node_modules/array.from/implementation.js":
 /***/ (function(module, exports, __webpack_require__) {
@@ -4832,134 +5746,6 @@ if (hasSymbols) {
 
 /***/ }),
 
-/***/ "../node_modules/klak/src/emitter.js":
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var internals = {};
-
-internals.TypeFilter = function (type) {
-  return function (value) {
-    return value.type === type;
-  };
-};
-internals.EqualityFilter = function (value) {
-  return function (input) {
-    return input === value;
-  };
-};
-
-internals.getListener = function (value) {
-  return value.listener;
-};
-internals.isString = function (input) {
-  return typeof input === 'string';
-};
-internals.isArray = function (input) {
-  return input instanceof Array;
-};
-internals.isFunction = function (input) {
-  return typeof input === 'function';
-};
-internals.isEmpty = function (input) {
-  return input.length < 1;
-};
-internals.assert = function (condition, message) {
-  if (!condition) throw new Error(message);
-};
-internals.ArgumentCheck = function (types, method) {
-  var assert = internals.assert,
-      isArray = internals.isArray,
-      isString = internals.isString,
-      isFunction = internals.isFunction,
-      isEmpty = internals.isEmpty;
-
-
-  assert(isFunction(method), '\'method\' must be a function');
-
-  var check = function check(type, listener) {
-
-    if (isArray(type)) return type.forEach(function (type) {
-      return check(type, listener);
-    });
-
-    assert(isString(type) && !isEmpty(type), '\'type\' must be a string');
-
-    assert(types.includes(type), '"' + type + '" listener type is not allowed');
-
-    if (isArray(listener)) return listener.forEach(function (handler) {
-      return check(type, handler);
-    });
-
-    assert(isFunction(listener), '\'listener\' must be a function');
-
-    method(type, listener);
-  };
-
-  return check;
-};
-
-internals.Emitter = module.exports = function (allowedTypes) {
-  var assert = internals.assert,
-      TypeFilter = internals.TypeFilter,
-      EqualityFilter = internals.EqualityFilter,
-      getListener = internals.getListener,
-      isArray = internals.isArray,
-      isString = internals.isString,
-      isEmpty = internals.isEmpty;
-
-
-  assert(isArray(allowedTypes) && !isEmpty(allowedTypes) && allowedTypes.every(isString), '\'types\' must be an array of string');
-
-  var _listeners = [];
-
-  var _getListeners = function _getListeners(type) {
-    return _listeners.filter(TypeFilter(type)).map(getListener);
-  };
-  var _findListener = function _findListener(type, listener) {
-    return _getListeners(type).find(EqualityFilter(listener));
-  };
-
-  var emitter = {
-    on: function on(type, listener) {
-
-      if (_findListener(type, listener)) return;
-
-      _listeners.push({ type: type, listener: listener });
-    },
-    off: function off(type, listener) {
-
-      var found = _findListener(type, listener);
-
-      if (!found) return;
-
-      _listeners.splice(_listeners.findIndex(function (item) {
-        return item.type === type && item.listener === found;
-      }), 1);
-    },
-    emit: function emit(type) {
-      for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-        args[_key - 1] = arguments[_key];
-      }
-
-      assert(isString(type) && !isEmpty(type), '\'type\' must be a string');
-
-      _getListeners(type).forEach(function (handler) {
-        return void handler.apply(undefined, args);
-      });
-    }
-  };
-
-  emitter.on = internals.ArgumentCheck(allowedTypes, emitter.on);
-  emitter.off = internals.ArgumentCheck(allowedTypes, emitter.off);
-
-  return emitter;
-};
-
-/***/ }),
-
 /***/ "../node_modules/object-keys/index.js":
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -8501,7 +9287,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _zwip = __webpack_require__("../node_modules/zwip/src/index.js");
+var _zwip = __webpack_require__("../../zwip/src/index.js");
 
 var _component = __webpack_require__("../node_modules/pwet/src/component.js");
 
@@ -8561,7 +9347,6 @@ internal.Player = function (element) {
 
   var _updateLoopState = function _updateLoopState() {
 
-    console.log('_updateLoopState()');
     var state = element.state;
 
     var loopState = _zwip.Loop.state;
@@ -8622,14 +9407,12 @@ internal.Player = function (element) {
       return _isLoopStarted = true;
     });
     _zwip.Loop.on('stop', function () {
-      return _isLoopStarted = false;
+      return _isLoopStarted = _isAnimationStarted = false;
     });
-    _zwip.Loop.on(['pause', 'stop'], _updateLoopState);
-
-    _zwip.Loop.register({
-      update: _updateLoopState,
-      frequency: 10
-    }, false);
+    _zwip.Loop.on(['pause', 'stop', 'tick'], _updateLoopState);
+    _zwip.Loop.on('tick', function () {
+      return _isLoopStarted = true;
+    });
 
     _updateLoopState();
   });
@@ -8638,12 +9421,8 @@ internal.Player = function (element) {
 
   var render = function render(element) {
     var state = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+    var renderScene = state.renderScene;
 
-
-    console.log('render');
-
-    var _Object$assign = Object.assign({}, internal.defaultState, state),
-        renderScene = _Object$assign.renderScene;
 
     (0, _incrementalDom.patch)(element, function () {
 
@@ -8658,6 +9437,7 @@ internal.Player = function (element) {
           internal.renderControl('◼', _stopAnimation, _isAnimationStarted);
         });
       });
+
       (0, _idomUtil.renderDiv)(null, null, 'class', 'right', function () {
         (0, _idomUtil.renderElement)('div', null, null, function () {
           (0, _idomUtil.renderH3)(_incrementalDom.text.bind(null, 'Loop state:'));
@@ -8690,15 +9470,13 @@ internal.Player.properties = {
 
     var title = scene.firstChild;
 
-    var start = function start() {
-      return title.style.position = 'absolute';
-    };
+    title.style.position = 'absolute';
 
     var render = function render() {
       return title.style.left = animation.value * (scene.clientWidth - title.clientWidth - 2) + 'px';
     };
 
-    var animation = (0, _zwip.Animation)({ duration: 10000, start: start, render: render });
+    var animation = (0, _zwip.Animation)({ duration: 5000, render: render });
 
     return animation;
   },
@@ -8713,616 +9491,15 @@ exports.default = internal.Player;
 
 /***/ }),
 
-/***/ "../node_modules/zwip/src/animation.js":
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
-var _loop = __webpack_require__("../node_modules/zwip/src/loop.js");
-
-var _loop2 = _interopRequireDefault(_loop);
-
-var _klak = __webpack_require__("../node_modules/klak/src/emitter.js");
-
-var _klak2 = _interopRequireDefault(_klak);
-
-var _utils = __webpack_require__("../node_modules/zwip/src/utils.js");
-
-var _easings = __webpack_require__("../node_modules/zwip/src/easings.js");
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-var internal = {};
-
-internal.parseEasing = function () {
-  var easing = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : _easings.easings.linear;
-
-
-  if (easing) {
-
-    if ((0, _utils.isString)(easing)) {
-
-      if (!_easings.easings[easing]) throw new Error('Unknown "' + easing + '" easing function');
-
-      easing = _easings.easings[easing];
-    }
-
-    (0, _utils.isFunction)(easing, 'easing');
-  }
-
-  return easing;
-};
-
-internal.parseOptions = function (input) {
-  var options = {};
-
-  (0, _utils.isObject)(input, 'options');
-  (0, _utils.isUndefined)(input.isZwipAnimation, 'isZwipAnimation');
-
-  var start = input.start,
-      stop = input.stop,
-      update = input.update,
-      render = input.render,
-      reverse = input.reverse,
-      duration = input.duration,
-      nbFrames = input.nbFrames,
-      easing = input.easing;
-
-
-  options.start = !start ? _utils.noop : (0, _utils.isFunction)(start, 'start');
-  options.stop = !stop ? _utils.noop : (0, _utils.isFunction)(stop, 'stop');
-  options.update = !update ? _utils.noop : (0, _utils.isFunction)(update, 'update');
-  options.render = !render ? _utils.noop : (0, _utils.isFunction)(render, 'render');
-  options.reverse = !!reverse;
-
-  if (!(duration ^ nbFrames)) throw new Error('Exactly one option of [\'duration\', \'nbFrames\'] is required');
-
-  options.duration = duration && (0, _utils.isInteger)(duration, 'duration');
-  options.nbFrames = nbFrames && (0, _utils.isInteger)(nbFrames, 'nbFrames');
-
-  options.easing = internal.parseEasing(easing);
-
-  return options;
-};
-
-exports.default = internal.Animation = function () {
-  var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-  var _options = options = internal.parseOptions(options),
-      _start = _options.start,
-      _stop = _options.stop,
-      _update = _options.update,
-      _easing = _options.easing,
-      _render = _options.render,
-      duration = _options.duration;
-
-  var _options2 = options,
-      nbFrames = _options2.nbFrames,
-      reverse = _options2.reverse;
-
-
-  var _startedAt = void 0;
-  var _pausedAt = void 0;
-  var _pausedTime = void 0;
-  var _frameCounter = void 0;
-
-  var animation = {
-    isZwipAnimation: true,
-    start: function start() {
-      var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-
-      if (_startedAt) throw new Error('Animation is already started');
-
-      (0, _utils.isObject)(options, 'options');
-
-      if ('reverse' in options) reverse = !!options.reverse;
-
-      _pausedAt = null;
-      _startedAt = Date.now();
-      _frameCounter = 0;
-      _pausedTime = 0;
-
-      _start(options);
-
-      _loop2.default.register(animation);
-
-      animation.emit('start');
-    },
-    stop: function stop() {
-
-      _pausedAt = null;
-      _startedAt = null;
-      _pausedTime = null;
-
-      _stop();
-
-      _loop2.default.deregister(animation);
-
-      animation.emit('stop');
-    },
-    pause: function pause() {
-
-      if (!_pausedAt) {
-        _pausedAt = Date.now();
-        animation.emit('unpause');
-        return;
-      }
-
-      _pausedTime = _pausedTime + (Date.now() - _pausedAt);
-      _pausedAt = null;
-      animation.emit('pause');
-    },
-    update: function update() {
-
-      if (!_startedAt) return;
-
-      if (nbFrames && _frameCounter >= nbFrames) return animation.stop();
-
-      _frameCounter++;
-
-      if (duration) {
-
-        var playedTime = animation.played;
-
-        nbFrames = Math.floor(_frameCounter * duration / playedTime);
-      }
-
-      _update();
-    },
-    render: function render() {
-      _render();
-    },
-
-    get currentFrame() {
-      return _frameCounter;
-    },
-    get pausedAt() {
-      return _pausedAt;
-    },
-    get played() {
-
-      if (!_startedAt) return 0;
-
-      var now = Date.now();
-
-      var totalTime = now - _startedAt;
-
-      if (_pausedAt) totalTime = totalTime - (now - _pausedAt);
-
-      return totalTime - _pausedTime;
-    },
-    get value() {
-
-      var value = _frameCounter / nbFrames;
-
-      return _easing(!reverse ? value : 1 - value);
-    },
-    get nbFrames() {
-
-      if (nbFrames) return nbFrames;
-
-      var duration = animation.duration;
-
-      if (!duration) return;
-
-      return duration / 1000 * _loop2.default.fps;
-    },
-    get duration() {
-
-      if (duration) return duration;
-
-      var nbFrames = animation.nbFrames;
-
-      if (!nbFrames) return;
-
-      return nbFrames / _loop2.default.fps;
-    },
-    get state() {
-      return {
-        value: animation.value,
-        nbFrames: animation.nbFrames,
-        duration: animation.duration,
-        played: animation.played,
-        currentFrame: animation.currentFrame
-      };
-    }
-  };
-
-  return Object.assign(animation, (0, _klak2.default)(['start', 'stop', 'pause', 'unpause', 'tick']));
-};
-
-internal.Animation.isAnimation = function (input) {
-  return (0, _utils.isObject)(input) && input.isZwipAnimation === true;
-};
-
-/***/ }),
-
-/***/ "../node_modules/zwip/src/easings.js":
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-var EaseIn = exports.EaseIn = function EaseIn(power) {
-  return function (t) {
-    return Math.pow(t, power);
-  };
-};
-var EaseOut = exports.EaseOut = function EaseOut(power) {
-  return function (t) {
-    return 1 - Math.abs(Math.pow(t - 1, power));
-  };
-};
-var EaseInOut = exports.EaseInOut = function EaseInOut(power) {
-  return function (t) {
-    return t < .5 ? EaseIn(power)(t * 2) / 2 : EaseOut(power)(t * 2 - 1) / 2 + 0.5;
-  };
-};
-
-var easings = exports.easings = {
-  linear: EaseInOut(1),
-  easeInQuad: EaseIn(2),
-  easeOutQuad: EaseOut(2),
-  easeInOutQuad: EaseInOut(2),
-  easeInCubic: EaseIn(3),
-  easeOutCubic: EaseOut(3),
-  easeInOutCubic: EaseInOut(3),
-  easeInQuart: EaseIn(4),
-  easeOutQuart: EaseOut(4),
-  easeInOutQuart: EaseInOut(4),
-  easeInQuint: EaseIn(5),
-  easeOutQuint: EaseOut(5),
-  easeInOutQuint: EaseInOut(5),
-  easeInCirc: function easeInCirc(t) {
-    return -(Math.sqrt(1 - easings.easeInQuad(t)) - 1);
-  },
-  easeOutCirc: function easeOutCirc(t) {
-    return Math.sqrt(easings.easeOutQuad(t));
-  }
-};
-
-/***/ }),
-
-/***/ "../node_modules/zwip/src/index.js":
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.Loop = exports.Animation = undefined;
-
-var _animation = __webpack_require__("../node_modules/zwip/src/animation.js");
-
-var _animation2 = _interopRequireDefault(_animation);
-
-var _loop = __webpack_require__("../node_modules/zwip/src/loop.js");
-
-var _loop2 = _interopRequireDefault(_loop);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-exports.Animation = _animation2.default;
-exports.Loop = _loop2.default;
-
-/***/ }),
-
-/***/ "../node_modules/zwip/src/loop.js":
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
-var _klak = __webpack_require__("../node_modules/klak/src/emitter.js");
-
-var _klak2 = _interopRequireDefault(_klak);
-
-var _utils = __webpack_require__("../node_modules/zwip/src/utils.js");
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-var internals = {
-  animations: [],
-  listeners: [],
-  state: {
-    status: 'initialized'
-  },
-  fps: 60,
-  listenerTypes: ['start', 'stop', 'pause', 'unpause']
-};
-
-internals.loop = function () {
-
-  if (internals.paused) return;
-
-  internals.requestId = requestAnimationFrame(internals.loop);
-  internals.now = Date.now();
-
-  internals.interval = 1000 / internals.fps;
-  internals.delta = internals.now - internals.then;
-
-  if (internals.delta > internals.interval) {
-
-    internals.AnimationLoop.frame();
-  }
-};
-
-internals.MethodCaller = function (key) {
-  for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-    args[_key - 1] = arguments[_key];
-  }
-
-  (0, _utils.isRequired)(key, 'key');
-  (0, _utils.isString)(key, 'key');
-
-  return function (animation) {
-
-    if (animation[key] && internals.counter % animation.frequency === 0) animation[key].apply(animation, args);
-  };
-};
-
-internals.emitTick = internals.MethodCaller('emit', 'tick');
-internals.callUpdate = internals.MethodCaller('update');
-internals.callRender = internals.MethodCaller('render');
-internals.callPause = internals.MethodCaller('pause');
-
-internals.isNotPaused = function (object) {
-  return !object.pausedAt;
-};
-
-internals.AnimationLoop = {
-  start: function start() {
-
-    if (internals.requestId) throw new Error('Loop is already started');
-
-    internals.counter = 0;
-    internals.paused = null;
-    internals.then = Date.now();
-    internals.state.status = 'started';
-
-    internals.loop();
-
-    internals.AnimationLoop.emit('start');
-  },
-  stop: function stop() {
-
-    if (internals.requestId) cancelAnimationFrame(internals.requestId);
-
-    internals.requestId = null;
-    internals.state.status = 'stopped';
-
-    internals.AnimationLoop.emit('stop');
-  },
-  pause: function pause() {
-
-    if (internals.paused) {
-
-      internals.paused = null;
-      internals.state.status = 'started';
-
-      internals.animations.forEach(internals.callPause);
-
-      internals.AnimationLoop.emit('unpause');
-
-      internals.loop();
-      return;
-    }
-
-    internals.animations.forEach(internals.callPause);
-
-    internals.paused = Date.now();
-    internals.state.status = 'paused';
-
-    internals.AnimationLoop.emit('pause');
-  },
-  register: function register(animation) {
-    var auto = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
-
-
-    (0, _utils.isObject)(animation, 'animation');
-
-    animation.frequency = animation.frequency || 1;
-
-    (0, _utils.isInteger)(animation.frequency, 'frequency');
-
-    (0, _utils.assert)((0, _utils.isFunction)(animation.render) || (0, _utils.isFunction)(animation.update), '\'render\' or \'update\' method is required');
-
-    animation.render = animation.render || _utils.noop;
-    animation.update = animation.update || _utils.noop;
-
-    if (auto && !internals.requestId) internals.AnimationLoop.start();
-
-    if (internals.animations.includes(animation)) return;
-
-    internals.animations.push(animation);
-  },
-  deregister: function deregister(animation) {
-    var auto = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
-
-
-    var index = internals.animations.indexOf(animation);
-
-    if (~index) internals.animations.splice(index, 1);
-
-    if (auto && internals.requestId && !internals.animations.length) internals.AnimationLoop.stop();
-  },
-  frame: function frame() {
-
-    internals.counter++;
-
-    internals.elapsed = internals.now - internals.then;
-    internals.then = internals.now - internals.delta % internals.interval;
-
-    internals.state.fps = 1000 / internals.elapsed;
-    internals.state.animations = internals.animations.length;
-    internals.state.frames = internals.counter;
-
-    var animations = internals.animations.filter(internals.isNotPaused);
-
-    animations.forEach(internals.emitTick);
-
-    animations.forEach(internals.callUpdate);
-
-    animations.forEach(internals.callRender);
-  },
-
-
-  get state() {
-    return internals.state;
-  },
-  get fps() {
-    return internals.fps;
-  },
-  set fps(newValue) {
-
-    (0, _utils.isInteger)(newValue, 'fps');
-
-    internals.fps = newValue;
-  }
-};
-
-exports.default = Object.assign(internals.AnimationLoop, (0, _klak2.default)(['start', 'stop', 'pause', 'unpause']));
-
-/***/ }),
-
-/***/ "../node_modules/zwip/src/polyfills.js":
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-if (!Element.prototype.matches) {
-  Element.prototype.matches = Element.prototype.matchesSelector || Element.prototype.mozMatchesSelector || Element.prototype.msMatchesSelector || Element.prototype.oMatchesSelector || Element.prototype.webkitMatchesSelector || function (s) {
-    var matches = (this.document || this.ownerDocument).querySelectorAll(s);
-    var i = matches.length;
-    while (--i >= 0 && matches.item(i) !== this) {}
-    return i > -1;
-  };
-}
-window.requestAnimationFrame = function () {
-  return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function (callback) {
-    window.setTimeout(function () {
-
-      callback(+new Date());
-    }, 1000 / 60);
-  };
-}();
-
-/***/ }),
-
-/***/ "../node_modules/zwip/src/utils.js":
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-var internals = {};
-
-internals.Assertion = function (check, errorMessage) {
-
-  return function (input, assert) {
-
-    var isTrue = !!check(input);
-    if (isTrue) return input || true;
-
-    if (!assert) return false;
-
-    throw new Error('"' + (typeof assert !== 'string' ? 'input' : assert) + '" ' + errorMessage);
-  };
-};
-
-var assert = exports.assert = function assert(condition, message) {
-
-  if (condition) return condition;
-
-  throw new Error(message);
-};
-
-var noop = exports.noop = function noop() {};
-var isEqualTo = exports.isEqualTo = function isEqualTo(value) {
-  var message = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'is not equal to value';
-  return internals.Assertion(function (input) {
-    return input === value;
-  }, message);
-};
-var isTrue = exports.isTrue = isEqualTo(true, 'must be true');
-var isUndefined = exports.isUndefined = isEqualTo(void 0, 'must be undefined');
-var isRequired = exports.isRequired = internals.Assertion(function (input) {
-  return !!input;
-}, 'is required');
-var isInstanceOf = exports.isInstanceOf = function isInstanceOf(type) {
-  return internals.Assertion(function (input) {
-    return input instanceof type;
-  }, 'is not an instance of ' + type.name);
-};
-var isArray = exports.isArray = isInstanceOf(Array);
-var isObject = exports.isObject = internals.Assertion(function (input) {
-  return (typeof input === 'undefined' ? 'undefined' : _typeof(input)) === 'object';
-}, 'must be an object');
-var isString = exports.isString = internals.Assertion(function (input) {
-  return typeof input === 'string';
-}, 'must be a string');
-var isFunction = exports.isFunction = internals.Assertion(function (input) {
-  return typeof input === 'function';
-}, 'must be a function');
-var isNumber = exports.isNumber = internals.Assertion(function (input) {
-  return typeof input === 'number';
-}, 'must be a number');
-var isInteger = exports.isInteger = internals.Assertion(function (input) {
-  return Number.isInteger(input);
-}, 'must be an integer');
-
-var isElement = exports.isElement = internals.Assertion(function (object) {
-
-  if (!object || (typeof object === 'undefined' ? 'undefined' : _typeof(object)) !== "object") return false;
-
-  if ((typeof HTMLElement === 'undefined' ? 'undefined' : _typeof(HTMLElement)) === "object") return object instanceof HTMLElement;
-
-  return object.nodeType === 1 && typeof object.nodeName === "string";
-}, 'must be a HTMLElement');
-
-var round = exports.round = function round(value, decimals) {
-
-  isNumber(value, 'value');
-
-  isRequired(decimals, 'decimals');
-  isInteger(decimals, 'decimals');
-
-  return Number(Math.round(value + 'e' + decimals) + 'e-' + decimals);
-};
-
-/***/ }),
-
 /***/ "../src/animation.js":
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_zwip_src_animation__ = __webpack_require__("../node_modules/zwip/src/animation.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_zwip_src_animation__ = __webpack_require__("../../zwip/src/animation.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_zwip_src_animation___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_zwip_src_animation__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_style_attr__ = __webpack_require__("../node_modules/style-attr/lib/index.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_style_attr___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1_style_attr__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_zwip_src_utils__ = __webpack_require__("../node_modules/zwip/src/utils.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_zwip_src_utils__ = __webpack_require__("../../zwip/src/utils.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_zwip_src_utils___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_2_zwip_src_utils__);
 
 
@@ -9350,14 +9527,14 @@ const FadeAnimation = (options = {}) => {
     element.setAttribute('style', __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_1_style_attr__["stringify"])(style));
   };
 
-  const start = () => {
+  const start = options => {
 
     style = element.getAttribute('style');
     style = style ? __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_1_style_attr__["parse"])(style) : {};
 
     style.opacity = element.style.opacity ? parseFloat(element.style.opacity) : animation.reverse ? 0 : 1;
 
-    _start();
+    _start(options);
   };
 
   const stop = () => {
@@ -9379,7 +9556,7 @@ const FadeAnimation = (options = {}) => {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_zwip_src_polyfills__ = __webpack_require__("../node_modules/zwip/src/polyfills.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_zwip_src_polyfills__ = __webpack_require__("../../zwip/src/polyfills.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_zwip_src_polyfills___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_zwip_src_polyfills__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_pwet_src_polyfills__ = __webpack_require__("../node_modules/pwet/src/polyfills/index.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_pwet_src_polyfills___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1_pwet_src_polyfills__);
@@ -9408,7 +9585,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       return __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_5__src_animation__["a" /* default */])({
         element: scene.firstChild,
-        duration: 1000
+        duration: 1000,
+        easing: 'easeInCirc'
       });
     },
     renderScene() {

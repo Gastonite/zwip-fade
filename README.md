@@ -2,21 +2,18 @@
 
 A [Zwip](https://github.com/Gastonyte/zwip) fade animation 
  
-### Show example
+### Show builded example
 
-show the already builded example:
+Just open :
 
 ```example/build/index.html```
 
-
-### Build example using webpack-dev-server
+### Build example
 
 ```
-npm install && npm run demo
+npm i && npm run demo
 ```
-
 or
-
 ```
 yarn && yarn demo
 ```

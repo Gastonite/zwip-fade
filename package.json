@@ -22,6 +22,6 @@
     "webpack": "^2.6.1",
     "webpack-dev-server": "^2.4.5",
     "zwip": "^1.1.2",
-    "zwip-player": "^1.0.3"
+    "zwip-player": "^1.0.7"
   }
 }
