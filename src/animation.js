@@ -16,7 +16,7 @@ const FadeAnimation = (options = {}) => {
 
   const update = () => {
 
-    style.opacity = animation.value;
+    style.opacity = Math.round(animation.value * 100) / 100;
   };
 
   const render = () => {
@@ -29,15 +29,18 @@ const FadeAnimation = (options = {}) => {
     style = element.getAttribute('style');
     style = style ? parseStyle(style) : {};
 
-    style.opacity = element.style.opacity
-      ? parseFloat(element.style.opacity)
-      : (animation.reverse ? 0 : 1);
+    // style.opacity = animation.reverse ? 0 : 1;
+
+    // element.style.opacity
+    //   ? parseFloat(element.style.opacity)
+    //   : (animation.reverse ? 0 : 1);
 
     _start(options);
   };
 
   const stop = () => {
-
+    // style.opacity = animation.reverse ? 1 : 0;
+    // render();
     _stop();
   };
 
