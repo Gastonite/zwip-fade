@@ -38,10 +38,10 @@ const FadeAnimation = (options = {}) => {
     _start(options);
   };
 
-  const stop = () => {
+  const stop = (options) => {
     // style.opacity = animation.reverse ? 1 : 0;
     // render();
-    _stop();
+    _stop(options);
   };
 
 
