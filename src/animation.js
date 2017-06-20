@@ -14,38 +14,19 @@ const FadeAnimation = (options = {}) => {
 
   let style;
 
-  const update = () => {
+  const update = () => style.opacity = Math.round(animation.value * 100) / 100;
 
-    style.opacity = Math.round(animation.value * 100) / 100;
-  };
-
-  const render = () => {
-
-    element.setAttribute('style', renderStyle(style));
-  };
+  const render = () => element.setAttribute('style', renderStyle(style));
 
   const start = (options) => {
 
     style = element.getAttribute('style');
     style = style ? parseStyle(style) : {};
 
-    // style.opacity = animation.reverse ? 0 : 1;
-
-    // element.style.opacity
-    //   ? parseFloat(element.style.opacity)
-    //   : (animation.reverse ? 0 : 1);
-
     _start(options);
   };
 
-  const stop = (options) => {
-    // style.opacity = animation.reverse ? 1 : 0;
-    // render();
-    _stop(options);
-  };
-
-
-  const animation =  Animation(Object.assign(options, { update, render, start, stop }));
+  const animation =  Animation(Object.assign(options, { update, render, start, stop: _stop }));
 
   return animation;
 };

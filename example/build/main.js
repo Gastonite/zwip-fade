@@ -59,7 +59,7 @@
 /******/ 	
 /******/ 	
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "7f865384a5546f8be635"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "fb282e362f4a1f6e9ab5"; // eslint-disable-line no-unused-vars
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentChildModule; // eslint-disable-line no-unused-vars
 /******/ 	var hotCurrentParents = []; // eslint-disable-line no-unused-vars
@@ -9819,12 +9819,8 @@ internal.Component = function (factory, element) {
           defaultValue = _ref.defaultValue;
 
 
-      var value = newProperties[name];
-
-      value = (0, _assertions.isUndefined)(value) ? defaultValue : coerce(value);
-
-      return Object.assign(properties, _defineProperty({}, name, value));
-    }, newProperties);
+      return Object.assign(properties, _defineProperty({}, name, !(0, _assertions.isUndefined)(newProperties[name]) ? coerce(newProperties[name]) : !(0, _assertions.isUndefined)(_properties[name]) ? _properties[name] : defaultValue));
+    }, {});
 
     _hooks.initialize(newProperties, function () {
       var shouldRender = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
@@ -10434,10 +10430,6 @@ Object.defineProperty(exports, "__esModule", {
 });
 
 var _zwip = __webpack_require__("../node_modules/zwip/src/index.js");
-
-var _component = __webpack_require__("../node_modules/pwet/src/component.js");
-
-var _component2 = _interopRequireDefault(_component);
 
 var _attribute = __webpack_require__("../node_modules/pwet/src/attribute.js");
 
@@ -11423,37 +11415,19 @@ const FadeAnimation = (options = {}) => {
 
   let style;
 
-  const update = () => {
+  const update = () => style.opacity = Math.round(animation.value * 100) / 100;
 
-    style.opacity = Math.round(animation.value * 100) / 100;
-  };
-
-  const render = () => {
-
-    element.setAttribute('style', __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_1_style_attr__["stringify"])(style));
-  };
+  const render = () => element.setAttribute('style', __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_1_style_attr__["stringify"])(style));
 
   const start = options => {
 
     style = element.getAttribute('style');
     style = style ? __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_1_style_attr__["parse"])(style) : {};
 
-    // style.opacity = animation.reverse ? 0 : 1;
-
-    // element.style.opacity
-    //   ? parseFloat(element.style.opacity)
-    //   : (animation.reverse ? 0 : 1);
-
     _start(options);
   };
 
-  const stop = options => {
-    // style.opacity = animation.reverse ? 1 : 0;
-    // render();
-    _stop(options);
-  };
-
-  const animation = __WEBPACK_IMPORTED_MODULE_0_zwip_src_animation___default()(Object.assign(options, { update, render, start, stop }));
+  const animation = __WEBPACK_IMPORTED_MODULE_0_zwip_src_animation___default()(Object.assign(options, { update, render, start, stop: _stop }));
 
   return animation;
 };
