@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       return FadeAnimation({
         element: scene.firstChild,
-        duration: 1000,
+        duration: 2000,
         easing: 'easeInCirc'
       });
     },
