@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const zwipPlayer = document.createElement('zwip-player');
 
-  zwipPlayer.pwet.initialize({
+  zwipPlayer.initialize({
     makeAnimation(scene) {
 
       return FadeAnimation({

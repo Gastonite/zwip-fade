@@ -42,8 +42,21 @@ module.exports = (env) => {
     }
   };
 
+  const resolve = {
+    alias: {
+      zwip: Path.resolve(__dirname, '../node_modules/zwip')
+    }
+  };
+
   const loaders = [
-    {test: /\.js$/, use: 'babel-loader' }
+    {test: /\.js$/, use: 'babel-loader' },
+    {
+      test: /\.styl$/,
+      use: [
+        { loader: 'css-loader' },
+        { loader: 'stylus-loader' }
+      ]
+    }
   ];
 
   const plugins = [new Webpack.NamedModulesPlugin()];
@@ -74,6 +87,7 @@ module.exports = (env) => {
   return {
     entry,
     output,
+    resolve,
     devtool,
     devServer,
     module: {
